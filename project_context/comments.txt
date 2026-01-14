@@ -1,0 +1,2 @@
++ we call api every 3seconds so if there is deposit fill within 3s we could not catch it if it happens between api calls
++ api rate limit is 1000 deposits

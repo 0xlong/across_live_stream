@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Across Deposits Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f26;
+            --bg-card: rgba(30, 37, 46, 0.7);
+            --accent: #6feac5;
+            --accent-secondary: #44d7a8;
+            --text-primary: #e7e9ea;
+            --text-secondary: #8b98a5;
+            --status-pending: #f7931a;
+            --status-filled: #00d395;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 span {
+            color: var(--accent);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--status-filled);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(0, 211, 149, 0.4);
+            }
+
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 0 8px rgba(0, 211, 149, 0);
+            }
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+        }
+
+        .stat-card h3 {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-card .value.pending {
+            color: var(--status-pending);
+        }
+
+        /* Filter Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, rgba(111, 234, 197, 0.15), rgba(68, 215, 168, 0.1));
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Table Container */
+        .table-container {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        tr {
+            transition: opacity 0.3s ease, background-color 0.3s ease;
+        }
+
+        tr.new-row {
+            animation: fadeSlideIn 0.4s ease-out;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        tr:hover td {
+            background: rgba(111, 234, 197, 0.03);
+        }
+
+        /* Smooth updates for dynamic content */
+        .wait-time {
+            transition: color 0.3s ease;
+        }
+
+        .status-badge {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .stat-card .value {
+            transition: opacity 0.2s ease;
+        }
+
+        /* Chain Display */
+        .chain-flow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chain-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-secondary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .chain-badge img {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+        }
+
+        .arrow {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Token Display */
+        .token-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .token-info img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .token-info span {
+            font-weight: 500;
+        }
+
+        /* Amount */
+        .amount {
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-badge.pending {
+            background: rgba(247, 147, 26, 0.15);
+            color: var(--status-pending);
+        }
+
+        .status-badge.filled {
+            background: rgba(0, 211, 149, 0.15);
+            color: var(--status-filled);
+        }
+
+        /* Wait Time */
+        .wait-time {
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .wait-time.warning {
+            color: var(--status-pending);
+        }
+
+        .wait-time.danger {
+            color: #ff4757;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 800px;
+            }
+        }
+
+        /* Slow Deposits Container */
+        .slow-deposits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .slow-deposit-card {
+            background: rgba(247, 147, 26, 0.08);
+            /* Faint orange/amber background */
+            border: 1px solid rgba(247, 147, 26, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .slow-deposit-card:hover {
+            border-color: var(--status-pending);
+            background: rgba(247, 147, 26, 0.12);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slow-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .slow-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slow-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--status-pending);
+            font-weight: 700;
+            background: rgba(247, 147, 26, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .slow-id {
+            font-family: monospace;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .slow-id-link {
+            font-family: monospace;
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-decoration: none;
+            border-bottom: 1px dotted var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .slow-id-link:hover {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .slow-route {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .slow-amount {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .slow-time {
+            text-align: right;
+        }
+
+        .slow-time-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--status-pending);
+            font-size: 18px;
+            display: block;
+        }
+
+        .slow-time-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><img src="assets/across_logo.png" alt="Across" style="height: 32px; vertical-align: middle;"> Across
+                Deposits Monitor</h1>
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                <span id="connection-status">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Pending Deposits</h3>
+                <div class="value pending" id="stat-pending">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Avg Wait Time (Unfilled)</h3>
+                <div class="value" id="stat-avg-wait">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Avg Fill Time (Filled)</h3>
+                <div class="value" id="stat-avg-fill">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Transactions</h3>
+                <div class="value" id="stat-volume">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>USD Volume / Min</h3>
+                <div class="value" id="stat-usd-volume">-</div>
+            </div>
+        </div>
+
+        <!-- Slow Pending Deposits Container -->
+        <div id="slow-deposits-container" class="slow-deposits-grid"></div>
+
+        <!-- Filter Controls -->
+        <div class="controls">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="pending">Pending Only</button>
+            <button class="filter-btn" data-filter="filled">Filled Only</button>
+
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Deposit ID</th>
+                        <th>Route</th>
+                        <th>Token</th>
+                        <th>Deposit Amount</th>
+                        <th>USD Value</th>
+                        <th>Status</th>
+                        <th>Recency</th>
+                    </tr>
+                </thead>
+                <tbody id="deposits-table">
+                    <tr>
+                        <td colspan="8" class="loading">Loading deposits</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Last updated: <span id="last-update">-</span>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://app.across.to/api/deposits';
+        let currentFilter = 'all';
+        let depositsData = [];
+
+        // Token prices state
+        let tokenPrices = {}; // symbol -> USD price
+        let tokenToCoingeckoId = {}; // symbol -> coingecko id
+        let priceRefreshInterval = 60000; // default 60s
+
+
+        // Chain configuration with local logos
+        // Chain configuration with local logos and explorer URLs
+        const CHAINS = {
+            1: { name: 'Ethereum', logo: 'assets/chains/ethereum.png', explorer: 'https://etherscan.io' },
+            10: { name: 'Optimism', logo: 'assets/chains/optimism.png', explorer: 'https://optimistic.etherscan.io' },
+            56: { name: 'BNB Chain', logo: 'assets/chains/bnb.png', explorer: 'https://bscscan.com' },
+            130: { name: 'Unichain', logo: 'assets/chains/unichain.png', explorer: 'https://uniscan.xyz' },
+            137: { name: 'Polygon', logo: 'assets/chains/polygon.png', explorer: 'https://polygonscan.com' },
+            143: { name: 'Monad', logo: 'assets/chains/ethereum.png', explorer: 'https://monadscan.com' },
+            232: { name: 'Lens', logo: 'assets/chains/polygon.png', explorer: 'https://block-explorer.testnet.lens.dev' },
+            324: { name: 'zkSync', logo: 'assets/chains/zksync.png', explorer: 'https://explorer.zksync.io' },
+            480: { name: 'World Chain', logo: 'assets/chains/world.png', explorer: 'https://worldscan.org' },
+            999: { name: 'HyperEVM', logo: 'assets/chains/ethereum.png', explorer: 'https://app.hyperliquid.xyz/explorer' },
+            1135: { name: 'Lisk', logo: 'assets/chains/lisk.png', explorer: 'https://blockscout.lisk.com' },
+            1868: { name: 'Soneium', logo: 'assets/chains/ethereum.png', explorer: 'https://soneium.blockscout.com' },
+            8453: { name: 'Base', logo: 'assets/chains/base.png', explorer: 'https://basescan.org' },
+            9745: { name: 'Plasma', logo: 'assets/chains/ethereum.png', explorer: 'https://plasma.io' },
+            34443: { name: 'Mode', logo: 'assets/chains/mode.png', explorer: 'https://explorer.mode.network' },
+            42161: { name: 'Arbitrum', logo: 'assets/chains/arbitrum.png', explorer: 'https://arbiscan.io' },
+            57073: { name: 'Ink', logo: 'assets/chains/ethereum.png', explorer: 'https://explorer.inkonchain.com' },
+            59144: { name: 'Linea', logo: 'assets/chains/linea.png', explorer: 'https://lineascan.build' },
+            81457: { name: 'Blast', logo: 'assets/chains/blast.png', explorer: 'https://blastscan.io' },
+            534352: { name: 'Scroll', logo: 'assets/chains/scroll.png', explorer: 'https://scrollscan.com' },
+            7777777: { name: 'Zora', logo: 'assets/chains/zora.png', explorer: 'https://explorer.zora.energy' },
+            34268394551451: { name: 'Solana', logo: 'assets/chains/solana.png', explorer: 'https://solscan.io' }
+        };
+
+        // Token logos (local) - symbol to logo path
+        const TOKEN_LOGOS = {
+            'USDC': 'assets/tokens/usdc.png',
+            'USDC.E': 'assets/tokens/usdc.png',
+            'USDT': 'assets/tokens/usdt.png',
+            'WETH': 'assets/tokens/weth.png',
+            'ETH': 'assets/tokens/eth.png',
+            'WBTC': 'assets/tokens/wbtc.png',
+            'DAI': 'assets/tokens/eth.png',
+            'ACX': 'assets/tokens/acx.png',
+            'UMA': 'assets/tokens/eth.png',
+            'BAL': 'assets/tokens/eth.png',
+            'BNB': 'assets/chains/bnb.png'
+        };
+
+        // Contract address to token info lookup (built from CSV)
+        let contractToToken = {}; // address -> {symbol, decimals}
+
+        // Load token metadata from CSV and build reverse lookup
+        async function loadTokenContracts() {
+            try {
+                const response = await fetch('assets/token_metadata.csv');
+                const text = await response.text();
+
+                // Parse CSV: chain,chain_id,token_symbol,token_address,decimals
+                // Handle both LF and CRLF line endings
+                const lines = text.trim().split(/\r?\n/);
+                for (let i = 1; i < lines.length; i++) { // Skip header
+                    const parts = lines[i].split(',');
+                    if (parts.length >= 5) {
+                        const symbol = parts[2].trim();
+                        const address = parts[3].trim().toLowerCase(); // Normalize to lowercase for case-insensitive lookup
+                        const decimals = parseInt(parts[4].trim()) || 18;
+                        if (address && address !== '0x0000000000000000000000000000000000000000') {
+                            contractToToken[address] = { symbol, decimals, address };
+                        }
+                    }
+                }
+                console.log('CSV total lines:', lines.length);
+                console.log('Sample line 109:', lines[109]);
+                console.log('Loaded token metadata:', Object.keys(contractToToken).length, 'addresses');
+            } catch (error) {
+                console.error('Failed to load token metadata:', error);
+            }
+        }
+
+        // Load token prices config and fetch prices from CoinGecko
+        async function loadTokenPricesConfig() {
+            try {
+                const response = await fetch('assets/token_prices_config.json');
+                const config = await response.json();
+                tokenToCoingeckoId = config.tokens || {};
+                priceRefreshInterval = config.refreshIntervalMs || 60000;
+                console.log('Loaded price config:', Object.keys(tokenToCoingeckoId).length, 'tokens');
+            } catch (error) {
+                console.error('Failed to load token prices config:', error);
+            }
+        }
+
+        async function fetchTokenPrices() {
+            try {
+                const coingeckoIds = [...new Set(Object.values(tokenToCoingeckoId))];
+                if (coingeckoIds.length === 0) return;
+
+                const idsParam = coingeckoIds.join(',');
+                const url = `https://api.coingecko.com/api/v3/simple/price?ids=${idsParam}&vs_currencies=usd`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Map back to symbols
+                for (const [symbol, cgId] of Object.entries(tokenToCoingeckoId)) {
+                    if (data[cgId] && data[cgId].usd) {
+                        tokenPrices[symbol.toUpperCase()] = data[cgId].usd;
+                    }
+                }
+                console.log('Updated token prices:', tokenPrices);
+            } catch (error) {
+                console.error('Failed to fetch token prices:', error);
+            }
+        }
+
+        function getTokenPrice(symbol) {
+            if (!symbol) return null;
+            const normalized = symbol.toUpperCase();
+            // Handle variants like USDC.E -> USDC
+            if (tokenPrices[normalized]) return tokenPrices[normalized];
+            const baseSymbol = normalized.split('.')[0];
+            return tokenPrices[baseSymbol] || null;
+        }
+
+        function formatUsdValue(rawAmount, decimals, symbol) {
+            const price = getTokenPrice(symbol);
+            if (!price) return '-';
+            try {
+                const value = parseFloat(rawAmount) / Math.pow(10, decimals);
+                const usdValue = value * price;
+                if (usdValue >= 1000000) return '$' + (usdValue / 1000000).toFixed(2) + 'M';
+                if (usdValue >= 1000) return '$' + (usdValue / 1000).toFixed(2) + 'K';
+                if (usdValue >= 1) return '$' + usdValue.toFixed(2);
+                return '$' + usdValue.toFixed(4);
+            } catch {
+                return '-';
+            }
+        }
+
+        function getTokenDecimals(deposit) {
+            // 1. Try address lookup
+            const address = deposit.assetAddr || deposit.inputToken || deposit.outputToken;
+            if (address) {
+                const normalizedAddr = address.toLowerCase(); // Case-insensitive lookup
+                let token = contractToToken[normalizedAddr];
+
+                // If no exact match and address is padded (66 chars), try suffix match
+                if (!token && normalizedAddr.length > 42) {
+                    const suffix = normalizedAddr.slice(-40);
+                    // Find any token that ends with this suffix
+                    const correctAddr = Object.keys(contractToToken).find(a => a.endsWith(suffix));
+                    if (correctAddr) {
+                        token = contractToToken[correctAddr];
+                    }
+                }
+
+                if (token) return token.decimals;
+
+                // Debug: Log failed lookup periodically
+                if (Math.random() < 0.05) {
+                    console.warn(`Unmatched address: ${normalizedAddr} | API Symbol: ${deposit.assetSymbol}`);
+                }
+            }
+
+            const symbol = (deposit.assetSymbol || '').toUpperCase();
+
+            // 2. Try known symbols if explicit lookups failed
+            if (symbol.includes('USDC') || symbol.includes('USDT')) return 6;
+            if (symbol.includes('WBTC')) return 8;
+
+            // 3. Fallback to API data or default
+            return deposit.assetDecimals || 18;
+        }
+
+        function getChainInfo(chainId) {
+            return CHAINS[chainId] || { name: `Chain ${chainId}`, logo: 'assets/chains/ethereum.png' };
+        }
+
+        function getTokenSymbol(deposit) {
+            // Helper to resolve token from address
+            function resolveFromAddress(addr) {
+                if (!addr) return null;
+                const normalizedAddr = addr.toLowerCase();
+                let token = contractToToken[normalizedAddr];
+
+                // If no exact match, try suffix match (for padded addresses or Solana base58)
+                if (!token && normalizedAddr.length > 40) {
+                    const suffix = normalizedAddr.slice(-40);
+                    const correctAddr = Object.keys(contractToToken).find(a => a.endsWith(suffix));
+                    if (correctAddr) {
+                        token = contractToToken[correctAddr];
+                    }
+                }
+                return token;
+            }
+
+            // Check if assetSymbol looks like an address (long string, not a proper symbol)
+            const assetSymbol = deposit.assetSymbol;
+            if (assetSymbol) {
+                // If assetSymbol is short (like "USDC", "WETH"), use it directly
+                if (assetSymbol.length <= 10 && !assetSymbol.startsWith('0x')) {
+                    return assetSymbol;
+                }
+                // Otherwise assetSymbol might be an address - try to resolve it
+                const tokenFromSymbol = resolveFromAddress(assetSymbol);
+                if (tokenFromSymbol) return tokenFromSymbol.symbol;
+            }
+
+            // Try to resolve from contract address fields
+            const address = deposit.assetAddr || deposit.inputToken || deposit.outputToken;
+            if (address) {
+                const token = resolveFromAddress(address);
+                if (token) return token.symbol;
+                return `${address.slice(0, 6)}...${address.slice(-4)}`;
+            }
+
+            // Last resort: if assetSymbol exists but wasn't resolved, truncate it
+            if (assetSymbol) {
+                return `${assetSymbol.slice(0, 6)}...${assetSymbol.slice(-4)}`;
+            }
+
+            return 'Unknown';
+        }
+
+
+
+        function getTokenLogo(symbol) {
+            return TOKEN_LOGOS[symbol?.toUpperCase()] || 'assets/tokens/eth.png';
+        }
+
+        function calculateWaitTime(timestamp) {
+            if (!timestamp) return { text: 'Unknown', isWarning: false };
+            try {
+                const depositTime = new Date(timestamp);
+                const now = new Date();
+                const diffMs = now - depositTime;
+                const totalSeconds = Math.floor(diffMs / 1000);
+
+                if (totalSeconds < 0) return { text: '0s', isWarning: false };
+
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                let text = '';
+                if (hours > 0) text += `${hours}h `;
+                if (minutes > 0 || hours > 0) text += `${minutes}m `;
+                text += `${seconds}s`;
+
+                return { text: text.trim(), totalSeconds };
+            } catch {
+                return { text: 'Error', totalSeconds: 0 };
+            }
+        }
+
+        function formatAmount(amount, decimals = 18) {
+            if (!amount) return '0';
+            try {
+                const value = parseFloat(amount) / Math.pow(10, decimals);
+                if (value >= 1000000) return (value / 1000000).toFixed(2) + 'M';
+                if (value >= 1000) return (value / 1000).toFixed(2) + 'K';
+                return value.toFixed(4);
+            } catch {
+                return amount;
+            }
+        }
+
+        function formatDepositId(id) {
+            if (!id) return '-';
+            const strId = String(id);
+            return strId.length > 7 ? `${strId.slice(0, 4)}...` : strId;
+        }
+
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '-';
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch {
+                return '-';
+            }
+        }
+
+        // Track rendered deposit IDs for diffing
+        let renderedDepositIds = new Set();
+
+        function createRowHTML(d) {
+            const origin = getChainInfo(d.originChainId);
+            const dest = getChainInfo(d.destinationChainId);
+            const token = getTokenSymbol(d);
+            const decimals = getTokenDecimals(d);
+            const rawAmount = d.inputAmount || d.outputAmount || '0';
+            const amount = formatAmount(rawAmount, decimals);
+            const usdValue = formatUsdValue(rawAmount, decimals, token);
+            const isPending = d.status === 'unfilled' || !d.fillTx;
+            const waitTime = calculateWaitTime(d.depositBlockTimestamp);
+            // Pending: yellowish, pending > 2min: red, filled: grey
+            const isWarning = isPending && waitTime.totalSeconds <= 120;
+            const isDanger = isPending && waitTime.totalSeconds > 120;
+            const txLink = origin.explorer ? `${origin.explorer}/tx/${d.depositTxHash}` : '#';
+
+            const formattedTimestamp = formatTimestamp(d.depositBlockTimestamp);
+
+            return {
+                html: `
+                    <td style="font-family: monospace; font-size: 12px; color: var(--text-secondary);">${formattedTimestamp}</td>
+                    <td style="font-family: monospace; color: var(--accent);"><a href="${txLink}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor;">${formatDepositId(d.depositId)}</a></td>
+                    <td>
+                        <div class="chain-flow">
+                            <div class="chain-badge">
+                                <img src="${origin.logo}" alt="${origin.name}" onerror="this.src='https://via.placeholder.com/18'">
+                                ${origin.name}
+                            </div>
+                            <span class="arrow">→</span>
+                            <div class="chain-badge">
+                                <img src="${dest.logo}" alt="${dest.name}" onerror="this.src='https://via.placeholder.com/18'">
+                                ${dest.name}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="token-info">
+                            <img src="${getTokenLogo(token)}" alt="${token}" onerror="this.src='https://via.placeholder.com/24'">
+                            <span>${token}</span>
+                        </div>
+                    </td>
+                    <td class="amount">${amount}</td>
+                    <td class="amount" style="color: var(--accent);">${usdValue}</td>
+                    <td>
+                        <span class="status-badge ${isPending ? 'pending' : 'filled'}">
+                            ${isPending ? '⏳ Pending' : '✓ Filled'}
+                        </span>
+                    </td>
+                    <td class="wait-time ${isDanger ? 'danger' : (isWarning ? 'warning' : '')}">${waitTime.text}</td>
+                `,
+                isPending,
+                usdValue,
+                waitTimeText: waitTime.text,
+                isWarning,
+                isDanger
+            };
+        }
+
+        function renderDeposits(deposits) {
+            const tbody = document.getElementById('deposits-table');
+
+            // Apply filter
+            let filtered = deposits;
+            if (currentFilter === 'pending') {
+                filtered = deposits.filter(d => d.status === 'unfilled' || !d.fillTx);
+            } else if (currentFilter === 'filled') {
+                filtered = deposits.filter(d => d.status === 'filled' && d.fillTx);
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <p>No deposits matching filter</p>
+                        </td>
+                    </tr>
+                `;
+                renderedDepositIds.clear();
+                return;
+            }
+
+            const newIds = new Set(filtered.map(d => d.depositId));
+            const existingRows = tbody.querySelectorAll('tr[data-deposit-id]');
+            const existingRowMap = new Map();
+
+            // Build map of existing rows
+            existingRows.forEach(row => {
+                existingRowMap.set(row.dataset.depositId, row);
+            });
+
+            // Remove rows that are no longer in filtered data
+            existingRows.forEach(row => {
+                if (!newIds.has(row.dataset.depositId)) {
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 200);
+                }
+            });
+
+            // Clear loading message if present
+            const loadingRow = tbody.querySelector('tr td.loading');
+            if (loadingRow) {
+                loadingRow.parentElement.remove();
+            }
+
+            // Process each deposit
+            filtered.forEach((d, index) => {
+                const depositId = String(d.depositId);
+                const existingRow = existingRowMap.get(depositId);
+                const rowData = createRowHTML(d);
+
+                if (existingRow) {
+                    // Update only dynamic cells (USD value, status and wait time)
+                    const usdCell = existingRow.cells[5];
+                    const statusCell = existingRow.cells[6];
+                    const waitTimeCell = existingRow.cells[7];
+
+                    // Update USD value
+                    if (usdCell) {
+                        usdCell.textContent = rowData.usdValue;
+                    }
+
+                    // Update status if changed
+                    const newStatusClass = rowData.isPending ? 'pending' : 'filled';
+                    const statusBadge = statusCell.querySelector('.status-badge');
+                    if (statusBadge && !statusBadge.classList.contains(newStatusClass)) {
+                        statusBadge.className = `status-badge ${newStatusClass}`;
+                        statusBadge.innerHTML = rowData.isPending ? '⏳ Pending' : '✓ Filled';
+                    }
+
+                    // Update wait time text
+                    waitTimeCell.textContent = rowData.waitTimeText;
+                    waitTimeCell.className = `wait-time ${rowData.isDanger ? 'danger' : (rowData.isWarning ? 'warning' : '')}`;
+                } else {
+                    // Create new row
+                    const newRow = document.createElement('tr');
+                    newRow.dataset.depositId = depositId;
+                    newRow.innerHTML = rowData.html;
+                    newRow.classList.add('new-row');
+
+                    // Insert at correct position
+                    const refRow = tbody.children[index];
+                    if (refRow) {
+                        tbody.insertBefore(newRow, refRow);
+                    } else {
+                        tbody.appendChild(newRow);
+                    }
+
+                    // Remove animation class after animation completes
+                    setTimeout(() => newRow.classList.remove('new-row'), 400);
+                }
+            });
+
+            renderedDepositIds = newIds;
+        }
+
+        function updateStats(deposits) {
+            const pending = deposits.filter(d => d.status === 'unfilled' || !d.fillTx);
+            const filled = deposits.filter(d => d.status === 'filled' && d.fillTx);
+
+            document.getElementById('stat-pending').textContent = pending.length;
+
+            // Calculate average wait time for pending
+            if (pending.length > 0) {
+                const totalSeconds = pending.reduce((sum, d) => {
+                    if (!d.depositBlockTimestamp) return sum;
+                    const diff = (new Date() - new Date(d.depositBlockTimestamp)) / 1000;
+                    return sum + Math.max(0, diff);
+                }, 0);
+                const avgSeconds = Math.floor(totalSeconds / pending.length);
+                const mins = Math.floor(avgSeconds / 60);
+                const secs = avgSeconds % 60;
+                document.getElementById('stat-avg-wait').textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            } else {
+                document.getElementById('stat-avg-wait').textContent = '-';
+            }
+
+            // Calculate average fill time for filled deposits
+            const filledWithTime = filled.filter(d => d.fillBlockTimestamp && d.depositBlockTimestamp);
+            if (filledWithTime.length > 0) {
+                const totalFillSeconds = filledWithTime.reduce((sum, d) => {
+                    const depositTime = new Date(d.depositBlockTimestamp).getTime();
+                    const fillTime = new Date(d.fillBlockTimestamp).getTime();
+                    const diff = (fillTime - depositTime) / 1000;
+                    return sum + Math.max(0, diff);
+                }, 0);
+                const avgFillSeconds = Math.floor(totalFillSeconds / filledWithTime.length);
+                const fillMins = Math.floor(avgFillSeconds / 60);
+                const fillSecs = avgFillSeconds % 60;
+                document.getElementById('stat-avg-fill').textContent = fillMins > 0 ? `${fillMins}m ${fillSecs}s` : `${fillSecs}s`;
+            } else {
+                document.getElementById('stat-avg-fill').textContent = '-';
+            }
+
+            // Simple volume placeholder (would need price data for USD)
+            document.getElementById('stat-volume').textContent = `${deposits.length} txns`;
+
+            // Calculate USD volume per minute (filled deposits in last 60 seconds)
+            const now = new Date();
+            const oneMinuteAgo = new Date(now.getTime() - 60000);
+            const recentFilled = deposits.filter(d => {
+                if (d.status !== 'filled' || !d.fillTx || !d.fillBlockTimestamp) return false;
+                const fillTime = new Date(d.fillBlockTimestamp);
+                return fillTime >= oneMinuteAgo;
+            });
+
+            let usdVolumeLastMinute = 0;
+            recentFilled.forEach(d => {
+                const decimals = getTokenDecimals(d);
+                const symbol = getTokenSymbol(d);
+                const price = getTokenPrice(symbol);
+                const rawAmount = d.inputAmount || d.outputAmount || '0';
+                if (price && rawAmount !== '0') {
+                    try {
+                        const value = parseFloat(rawAmount) / Math.pow(10, decimals);
+                        usdVolumeLastMinute += value * price;
+                    } catch (e) { }
+                }
+            });
+
+            // Always show a value
+            if (usdVolumeLastMinute >= 1000000) {
+                document.getElementById('stat-usd-volume').textContent = '$' + (usdVolumeLastMinute / 1000000).toFixed(2) + 'M';
+            } else if (usdVolumeLastMinute >= 1000) {
+                document.getElementById('stat-usd-volume').textContent = '$' + (usdVolumeLastMinute / 1000).toFixed(2) + 'K';
+            } else {
+                document.getElementById('stat-usd-volume').textContent = '$' + usdVolumeLastMinute.toFixed(2);
+            }
+        }
+
+        function renderSlowDeposits(deposits) {
+            const container = document.getElementById('slow-deposits-container');
+
+            // Filter: Status is pending (unfilled) AND wait time > 60s
+            const slowDeposits = deposits.filter(d => {
+                const isPending = d.status === 'unfilled' || !d.fillTx;
+                if (!isPending) return false;
+
+                const depositTime = new Date(d.depositBlockTimestamp);
+                const now = new Date();
+                const diffSeconds = (now - depositTime) / 1000;
+                return diffSeconds > 60;
+            });
+
+            const newSlowIds = new Set(slowDeposits.map(d => String(d.depositId)));
+            const existingCards = container.querySelectorAll('.slow-deposit-card[data-deposit-id]');
+            const existingCardMap = new Map();
+
+            existingCards.forEach(card => {
+                existingCardMap.set(card.dataset.depositId, card);
+            });
+
+            // If no slow deposits, hide with transition
+            if (slowDeposits.length === 0) {
+                if (container.style.display !== 'none') {
+                    existingCards.forEach(card => {
+                        card.style.opacity = '0';
+                    });
+                    setTimeout(() => {
+                        container.style.display = 'none';
+                        container.innerHTML = '';
+                    }, 300);
+                }
+                return;
+            }
+
+            container.style.display = 'grid';
+
+            // Remove cards no longer slow
+            existingCards.forEach(card => {
+                if (!newSlowIds.has(card.dataset.depositId)) {
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                }
+            });
+
+            // Process each slow deposit
+            slowDeposits.forEach(d => {
+                const depositId = String(d.depositId);
+                const origin = getChainInfo(d.originChainId);
+                const dest = getChainInfo(d.destinationChainId);
+                const token = getTokenSymbol(d);
+                const decimals = getTokenDecimals(d);
+                const rawAmount = d.inputAmount || d.outputAmount || '0';
+                const amount = formatAmount(rawAmount, decimals);
+                const waitTime = calculateWaitTime(d.depositBlockTimestamp);
+                const txLink = origin.explorer ? `${origin.explorer}/tx/${d.depositTxHash}` : '#';
+
+                const existingCard = existingCardMap.get(depositId);
+
+                if (existingCard) {
+                    // Only update the wait time value
+                    const timeVal = existingCard.querySelector('.slow-time-val');
+                    if (timeVal) {
+                        timeVal.textContent = waitTime.text;
+                    }
+                } else {
+                    // Create new card
+                    const newCard = document.createElement('div');
+                    newCard.className = 'slow-deposit-card';
+                    newCard.dataset.depositId = depositId;
+                    newCard.innerHTML = `
+                        <div class="slow-info">
+                            <div class="slow-header">
+                                <span class="slow-label">Slow Fill</span>
+                                <a href="${txLink}" target="_blank" class="slow-id-link" title="View Transaction">#${formatDepositId(d.depositId)} ↗</a>
+                            </div>
+                            <div class="slow-route">
+                                <img src="${origin.logo}" width="14" height="14" style="border-radius:50%" onerror="this.src='https://via.placeholder.com/14'">
+                                <span>${origin.name}</span>
+                                <span style="font-size: 10px; color: var(--text-secondary);">➜</span>
+                                <img src="${dest.logo}" width="14" height="14" style="border-radius:50%" onerror="this.src='https://via.placeholder.com/14'">
+                                <span>${dest.name}</span>
+                            </div>
+                            <div class="slow-amount">
+                                <img src="${getTokenLogo(token)}" width="14" height="14" style="border-radius:50%" onerror="this.src='https://via.placeholder.com/14'">
+                                <span>${amount} ${token}</span>
+                            </div>
+                        </div>
+                        <div class="slow-time">
+                            <span class="slow-time-val">${waitTime.text}</span>
+                            <span class="slow-time-label">Pending</span>
+                        </div>
+                    `;
+                    container.appendChild(newCard);
+                }
+            });
+        }
+
+        const depositsCache = new Map();
+
+        async function fetchDeposits(limit = 50) {
+            try {
+                // Fetch slightly more to ensure overlap, though we accumulate locally
+                const response = await fetch(`${API_URL}?limit=${limit}&skip=0`);
+                if (!response.ok) throw new Error('API Error');
+
+                const newDeposits = await response.json();
+
+                // 1. Update Cache: Add new / Update existing
+                newDeposits.forEach(d => {
+                    depositsCache.set(d.depositId, d);
+                });
+
+                // 2. Prune Cache: Remove deposits older than 10 minutes
+                const now = Date.now();
+                const TEN_MINUTES_MS = 10 * 60 * 1000;
+
+                for (const [id, deposit] of depositsCache) {
+                    const depositTime = new Date(deposit.depositBlockTimestamp).getTime();
+                    if (now - depositTime > TEN_MINUTES_MS) {
+                        depositsCache.delete(id);
+                    }
+                }
+
+                // 3. Convert Map to Array and Sort (Newest first)
+                depositsData = Array.from(depositsCache.values())
+                    .sort((a, b) => new Date(b.depositBlockTimestamp) - new Date(a.depositBlockTimestamp));
+
+                renderDeposits(depositsData);
+                updateStats(depositsData);
+                renderSlowDeposits(depositsData);
+
+                document.getElementById('connection-status').textContent = 'Live';
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('connection-status').textContent = 'Reconnecting...';
+            }
+        }
+
+        // Check pending deposits individually for status updates
+        async function checkPendingStatuses() {
+            const pendingDeposits = Array.from(depositsCache.values())
+                .filter(d => d.status === 'unfilled' || !d.fillTx);
+
+            if (pendingDeposits.length === 0) return;
+
+            console.log(`Checking status of ${pendingDeposits.length} pending deposits...`);
+
+            for (const deposit of pendingDeposits) {
+                try {
+                    const url = `https://app.across.to/api/deposit/status?originChainId=${deposit.originChainId}&depositId=${deposit.depositId}`;
+                    const res = await fetch(url);
+
+                    if (!res.ok) continue;
+
+                    const statusData = await res.json();
+
+                    // If status changed to filled, update the cached record
+                    if (statusData.status === 'filled') {
+                        deposit.status = 'filled';
+                        deposit.fillTx = statusData.fillTxHash || statusData.fillTx;
+                        deposit.fillBlockTimestamp = statusData.fillTxTimestamp || statusData.fillBlockTimestamp;
+                        deposit.relayer = statusData.relayer;
+                        console.log(`Deposit ${deposit.depositId} now filled`);
+                    }
+                } catch (err) {
+                    console.warn(`Failed to check status for deposit ${deposit.depositId}:`, err);
+                }
+            }
+
+            // Rebuild depositsData from updated cache and re-render
+            depositsData = Array.from(depositsCache.values())
+                .sort((a, b) => new Date(b.depositBlockTimestamp) - new Date(a.depositBlockTimestamp));
+
+            renderDeposits(depositsData);
+            updateStats(depositsData);
+            renderSlowDeposits(depositsData);
+        }
+
+        // Filter button handlers
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderDeposits(depositsData);
+            });
+        });
+
+        // Initialize: load token contracts and prices, then start fetching
+        (async function init() {
+            await loadTokenContracts();
+            await loadTokenPricesConfig();
+            await fetchTokenPrices(); // Initial price fetch
+            await fetchDeposits(1000); // Initial heavy fetch for history
+            setInterval(() => fetchDeposits(50), 1000); // Poll for new deposits (50 every 1s)
+            setInterval(() => checkPendingStatuses(), 5000); // Check pending statuses
+            setInterval(() => fetchTokenPrices(), priceRefreshInterval); // Refresh prices
+        })();
+    </script>
+</body>
+
+</html>
