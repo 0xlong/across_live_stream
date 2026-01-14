@@ -1,3 +1,3 @@
 + we call api every 3seconds so if there is deposit fill within 3s we could not catch it if it happens between api calls
 + api rate limit is 1000 deposits
-+ when deposit is pending more than 10min we leave it and fetch new deposit txns, we are only 
++ when deposit is pending more than 10min it is going out of cache to make place for new deposit txns
