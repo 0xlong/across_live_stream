@@ -535,16 +535,16 @@
                 <div class="value pending" id="stat-pending">-</div>
             </div>
             <div class="stat-card">
-                <h3>Avg Wait Time (Unfilled)</h3>
-                <div class="value" id="stat-avg-wait">-</div>
+                <h3>Fill Rate / MIN</h3>
+                <div class="value" id="stat-fill-rate">-</div>
             </div>
             <div class="stat-card">
-                <h3>Avg Fill Time (Filled)</h3>
+                <h3>Avg Fill Time</h3>
                 <div class="value" id="stat-avg-fill">-</div>
             </div>
             <div class="stat-card">
-                <h3>Total Transactions</h3>
-                <div class="value" id="stat-volume">-</div>
+                <h3>Deposits / Min</h3>
+                <div class="value" id="stat-deposits-per-min">-</div>
             </div>
             <div class="stat-card">
                 <h3>USD Volume / Min</h3>
@@ -642,7 +642,8 @@
             'ACX': 'assets/tokens/acx.png',
             'UMA': 'assets/tokens/eth.png',
             'BAL': 'assets/tokens/eth.png',
-            'BNB': 'assets/chains/bnb.png'
+            'BNB': 'assets/chains/bnb.png',
+            'CAKE': 'assets/tokens/cake.png'
         };
 
         // Contract address to token info lookup (built from CSV)
@@ -1052,19 +1053,12 @@
 
             document.getElementById('stat-pending').textContent = pending.length;
 
-            // Calculate average wait time for pending
-            if (pending.length > 0) {
-                const totalSeconds = pending.reduce((sum, d) => {
-                    if (!d.depositBlockTimestamp) return sum;
-                    const diff = (new Date() - new Date(d.depositBlockTimestamp)) / 1000;
-                    return sum + Math.max(0, diff);
-                }, 0);
-                const avgSeconds = Math.floor(totalSeconds / pending.length);
-                const mins = Math.floor(avgSeconds / 60);
-                const secs = avgSeconds % 60;
-                document.getElementById('stat-avg-wait').textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            // Calculate fill rate percentage
+            if (deposits.length > 0) {
+                const fillRate = (filled.length / deposits.length) * 100;
+                document.getElementById('stat-fill-rate').textContent = fillRate.toFixed(1) + '%';
             } else {
-                document.getElementById('stat-avg-wait').textContent = '-';
+                document.getElementById('stat-fill-rate').textContent = '-';
             }
 
             // Calculate average fill time for filled deposits
@@ -1084,12 +1078,19 @@
                 document.getElementById('stat-avg-fill').textContent = '-';
             }
 
-            // Simple volume placeholder (would need price data for USD)
-            document.getElementById('stat-volume').textContent = `${deposits.length} txns`;
-
-            // Calculate USD volume per minute (filled deposits in last 60 seconds)
+            // Time window for per-minute calculations
             const now = new Date();
             const oneMinuteAgo = new Date(now.getTime() - 60000);
+
+            // Calculate deposits per minute (deposits in the last 60 seconds)
+            const depositsLastMinute = deposits.filter(d => {
+                if (!d.depositBlockTimestamp) return false;
+                const depositTime = new Date(d.depositBlockTimestamp);
+                return depositTime >= oneMinuteAgo;
+            }).length;
+            document.getElementById('stat-deposits-per-min').textContent = depositsLastMinute;
+
+            // Calculate USD volume per minute (filled deposits in last 60 seconds)
             const recentFilled = deposits.filter(d => {
                 if (d.status !== 'filled' || !d.fillTx || !d.fillBlockTimestamp) return false;
                 const fillTime = new Date(d.fillBlockTimestamp);
