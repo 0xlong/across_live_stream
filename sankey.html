@@ -984,7 +984,7 @@
                 const topLink = data.links.reduce((max, l) => l.value > max.value ? l : max, data.links[0]);
                 const originName = getChainInfo(topLink.originId).name;
                 const destName = getChainInfo(topLink.destId).name;
-                document.getElementById('stat-top-route').textContent = `${originName.slice(0, 3)}→${destName.slice(0, 3)}`;
+                document.getElementById('stat-top-route').textContent = `${originName} → ${destName}`;
             } else {
                 document.getElementById('stat-top-route').textContent = '-';
             }
