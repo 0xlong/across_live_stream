@@ -160,6 +160,7 @@ $RECYCLE.BIN/
 .directory
 .Trash-*
 .nfs*
+*.webm
 
 # =============================================================================
 # Logs and Databases
