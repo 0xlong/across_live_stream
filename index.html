@@ -522,16 +522,29 @@
         <header class="header">
             <h1><img src="assets/across_logo.png" alt="Across" style="height: 32px; vertical-align: middle;"> Across
                 Deposits Monitor</h1>
-            <div class="live-indicator">
-                <div class="live-dot"></div>
-                <span id="connection-status">Connecting...</span>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="sankey.html"
+                    style="display: flex; align-items: center; gap: 8px; background: rgba(111, 234, 197, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18" />
+                        <path d="M18 17V9" />
+                        <path d="M13 17V5" />
+                        <path d="M8 17v-3" />
+                    </svg>
+                    Flow Diagram
+                </a>
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <span id="connection-status">Connecting...</span>
+                </div>
             </div>
         </header>
 
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>Pending Deposits</h3>
+                <h3>Pending Deposits (>60s)</h3>
                 <div class="value pending" id="stat-pending">-</div>
             </div>
             <div class="stat-card">
@@ -587,9 +600,8 @@
         </div>
 
         <!-- Footer -->
-        <div class="footer" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Last updated: <span id="last-update">-</span></span>
-            <a href="sankey.html" style="color: var(--accent); text-decoration: none;">View Flow Diagram →</a>
+        <div class="footer" style="text-align: center;">
+            Last updated: <span id="last-update">-</span>
         </div>
     </div>
 
@@ -995,6 +1007,12 @@
             const loadingRow = tbody.querySelector('tr td.loading');
             if (loadingRow) {
                 loadingRow.parentElement.remove();
+            }
+
+            // Clear empty-state message if present
+            const emptyStateRow = tbody.querySelector('tr td.empty-state');
+            if (emptyStateRow) {
+                emptyStateRow.parentElement.remove();
             }
 
             // Process each deposit
