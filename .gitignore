@@ -175,6 +175,7 @@ logs/
 # Misc
 # =============================================================================
 project_context/
+videos/
 .mypy_cache/
 .dmypy.json
 dmypy.json
