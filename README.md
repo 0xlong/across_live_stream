@@ -1,6 +1,6 @@
 # Across Live Stream
 
-Real-time dashboard for monitoring [Across Protocol](https://across.to) bridge deposits.
+Real-time dashboard for monitoring Across Protocol bridge deposits - [Live Dashboard](https://0xlong.github.io/across_live_stream/)
 
 ## What It Does
 
