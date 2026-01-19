@@ -687,6 +687,9 @@
         async function loadTokenContracts() {
             try {
                 const response = await fetch('assets/token_metadata.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 const text = await response.text();
 
                 // Parse CSV: chain,chain_id,token_symbol,token_address,decimals
