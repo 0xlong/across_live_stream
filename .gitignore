@@ -120,7 +120,6 @@ logs/
 # =============================================================================
 data/raw/
 data/processed/
-*.csv
 *.jsonl
 *.json
 !package.json
