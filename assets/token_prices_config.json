@@ -1,0 +1,17 @@
+{
+    "tokens": {
+        "WETH": "ethereum",
+        "ETH": "ethereum",
+        "USDC": "usd-coin",
+        "USDC.E": "usd-coin",
+        "USDT": "tether",
+        "WBTC": "wrapped-bitcoin",
+        "DAI": "dai",
+        "ACX": "across-protocol",
+        "UMA": "uma",
+        "BAL": "balancer",
+        "BNB": "binancecoin"
+    },
+    "refreshIntervalMs": 60000,
+    "apiUrl": "https://api.coingecko.com/api/v3/simple/price"
+}

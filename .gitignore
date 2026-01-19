@@ -121,7 +121,6 @@ logs/
 data/raw/
 data/processed/
 *.jsonl
-*.json
 !package.json
 !package-lock.json
 *.parquet
