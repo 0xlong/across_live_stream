@@ -4,12 +4,8 @@ Real-time dashboard for monitoring [Across Protocol](https://across.to) bridge d
 
 ## What It Does
 
-- **Deposits Monitor** (`index.html`) - Live table showing pending and filled bridge deposits with stats like fill rate, average fill time, and USD volume
-- **Sankey Flow Diagram** (`sankey.html`) - Visual flow chart showing which chains are bridging to where in real-time
-
-## Demo
-
-Open `index.html` in your browser - no setup needed!
+- **Deposits Monitor** (`index.html`) - Live table showing pending and filled bridge deposits (relays) with stats like fill rate, average fill time, and USD volume calculated per minute
+- **Sankey Flow Diagram** (`sankey.html`) - Visual flow chart showing which chains are bridging to where in real-time by volume as edge size and flying dot is a live transaction happening :)
 
 Both pages pull live data from the Across Protocol API and show token prices from CoinGecko.
 
@@ -17,9 +13,9 @@ Both pages pull live data from the Across Protocol API and show token prices fro
 
 - Live updates every 2 seconds
 - Filter deposits by status (pending/filled)
-- Highlights slow deposits that take longer than expected
+- Highlights slow deposits (> 60s) at the top of the page to take action if realy is pending for too long
 - Shows USD value using real-time token prices
-- Works on mobile
+- pending transactions alerts can be sent automatically to notify team to take care of transactions that are taking too long to process
 
 ## Project Structure
 
@@ -33,19 +29,4 @@ across_live_stream/
     ├── token_metadata.csv  # Token addresses and decimals
     └── token_prices_config.json  # CoinGecko token mappings
 ```
-
-## Host It Yourself
-
-Just upload everything to any static hosting:
-
-- GitHub Pages
-- Netlify
-- Vercel
-- Any web server
-
-No backend needed - it's all client-side JavaScript.
-
-## Credits
-- Data: [Across Protocol API](https://across.to)
-- Docs: [Across Protocol API Docs](https://docs.across.to/api-reference/introduction)
 
